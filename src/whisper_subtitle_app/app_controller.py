@@ -98,4 +98,4 @@ class AppController(QtCore.QObject):
         self.control_window.start_button.setEnabled(True)
         self.control_window.stop_button.setEnabled(False)
         self.status_changed.emit("Error")
-        QtWidgets.QMessageBox.critical(self.control_window, "Whisper Subtitle App", message)
+        QtWidgets.QMessageBox.critical(self.control_window, "SenseVoice Subtitle App", message)

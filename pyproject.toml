@@ -5,13 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "whisper-subtitle-app"
 version = "0.1.0"
-description = "macOS subtitle app that captures audio from a selected video app and transcribes it with Whisper"
+description = "macOS subtitle app that captures audio from a selected video app and transcribes it with SenseVoice"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=1.26",
   "PySide6>=6.8",
-  "faster-whisper>=1.1.0",
+  "funasr>=1.3.26",
+  "torch>=2.0",
+  "torchaudio>=2.0",
 ]
 
 [project.scripts]

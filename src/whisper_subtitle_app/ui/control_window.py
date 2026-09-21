@@ -6,7 +6,7 @@ from PySide6 import QtWidgets
 class ControlWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Whisper Subtitle App")
+        self.setWindowTitle("SenseVoice Subtitle App")
         self.resize(520, 220)
 
         central = QtWidgets.QWidget(self)
@@ -15,12 +15,12 @@ class ControlWindow(QtWidgets.QMainWindow):
 
         self.app_combo = QtWidgets.QComboBox(self)
         self.model_combo = QtWidgets.QComboBox(self)
-        self.model_combo.addItems(["tiny", "base", "small", "medium"])
-        self.model_combo.setCurrentText("small")
+        self.model_combo.addItems(["iic/SenseVoiceSmall"])
+        self.model_combo.setCurrentText("iic/SenseVoiceSmall")
         self.language_edit = QtWidgets.QLineEdit("ja", self)
-        self.language_edit.setPlaceholderText("ja, en, auto...")
+        self.language_edit.setPlaceholderText("ja, zh, yue, en, ko, auto...")
         form.addRow("Video app", self.app_combo)
-        form.addRow("Whisper model", self.model_combo)
+        form.addRow("SenseVoice model", self.model_combo)
         form.addRow("Language", self.language_edit)
         layout.addLayout(form)
 

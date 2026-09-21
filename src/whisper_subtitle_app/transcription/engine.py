@@ -15,9 +15,13 @@ StatusCallback = Callable[[str], None]
 ErrorCallback = Callable[[str], None]
 
 
+#: SenseVoice language codes accepted by ``AutoModel.generate``.
+SENSEVOICE_LANGUAGES = {"auto", "zh", "yue", "en", "ja", "ko", "nospeech"}
+
+
 @dataclass(slots=True)
 class TranscriptionConfig:
-    model_name: str = "small"
+    model_name: str = "iic/SenseVoiceSmall"
     language: str | None = "ja"
     sample_rate: int = 16_000
     chunk_seconds: int = 4
@@ -59,10 +63,19 @@ class LocalTranscriptionSession:
         try:
             self._on_status("Building native capture helper...")
             self._process = self._bridge.start_capture(self._source, sample_rate=self._config.sample_rate)
-            from faster_whisper import WhisperModel
+            from funasr import AutoModel
+            from funasr.utils.postprocess_utils import rich_transcription_postprocess
 
-            self._on_status("Loading Whisper model...")
-            model = WhisperModel(self._config.model_name, device="auto", compute_type="auto")
+            self._on_status("Loading SenseVoice model...")
+            model = AutoModel(
+                model=self._config.model_name,
+                trust_remote_code=True,
+                vad_model="fsmn-vad",
+                vad_kwargs={"max_single_segment_time": 30000},
+                disable_update=True,
+                device="cpu",
+            )
+            language = self._resolve_language()
             self._on_status(f"Capturing audio from {self._source.name}...")
 
             chunk_bytes = self._config.sample_rate * self._config.chunk_seconds * 4
@@ -80,17 +93,22 @@ class LocalTranscriptionSession:
                 if audio.size == 0:
                     continue
 
-                segments, _ = model.transcribe(
-                    audio,
-                    language=self._config.language,
-                    vad_filter=True,
-                    beam_size=1,
-                    best_of=1,
-                    condition_on_previous_text=False,
+                results = model.generate(
+                    input=audio,
+                    cache={},
+                    language=language,
+                    use_itn=True,
+                    batch_size_s=60,
+                    merge_vad=True,
+                    merge_length_s=15,
                 )
-                lines = [segment.text.strip() for segment in segments if segment.text.strip()]
+                lines = [
+                    rich_transcription_postprocess(result["text"]).strip()
+                    for result in results
+                    if result.get("text", "").strip()
+                ]
                 for line in lines:
-                    if line == last_text:
+                    if not line or line == last_text:
                         continue
                     last_text = line
                     self._on_subtitle(line)
@@ -103,3 +121,8 @@ class LocalTranscriptionSession:
         except (ImportError, NativeBridgeError, OSError, RuntimeError, ValueError) as exc:
             self._on_error(str(exc))
             self._on_status("Error")
+
+    def _resolve_language(self) -> str:
+        """Map the configured language to a code SenseVoice understands."""
+        language = (self._config.language or "auto").lower()
+        return language if language in SENSEVOICE_LANGUAGES else "auto"
